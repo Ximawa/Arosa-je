@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import {
   View,
   TextInput,
-  Button,
+  Pressable,
   StyleSheet,
   Text,
   RefreshControl,
@@ -46,9 +46,21 @@ const ListingScreen = ({ navigation }) => {
     navigation.navigate("ListingInfo", { id: id });
   };
 
+  const handleMapClick = () => {
+    navigation.navigate("ListingMap");
+  };
+
   return (
     <View style={{ flex: 1 }}>
       <Text style={styles.title}>Liste des annonces</Text>
+      <View style={styles.buttonContainer}>
+        <Pressable onPress={onRefresh} style={styles.button}>
+          <Text style={styles.text}>Refresh</Text>
+        </Pressable>
+        <Pressable onPress={handleMapClick} style={styles.button}>
+          <Text style={styles.text}>Voir la carte</Text>
+        </Pressable>
+      </View>
       <ScrollView
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -78,14 +90,25 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: 16,
   },
-  button: {
-    marginBottom: 20, // Increase the value for more space
-    backgroundColor: "red",
-  },
   title: {
     fontSize: 24,
     marginBottom: 24,
     textAlign: "center",
+  },
+  buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+    paddingHorizontal: 10,
+    marginVertical: 10,
+  },
+  button: {
+    padding: 10,
+    borderRadius: 5,
+    backgroundColor: "#3B543B",
+  },
+  text: {
+    color: "white",
   },
 });
 

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import MapView, { Marker } from "react-native-maps";
 import mime from "mime";
 import {
   View,
@@ -9,17 +10,28 @@ import {
   StyleSheet,
   TouchableOpacity,
   Image,
+  ScrollView,
   Pressable,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as SecureStore from "expo-secure-store";
 import { jwtDecode } from "jwt-decode";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import MapComponent from "../components/MapComponent";
 
 const NewListingScreen = ({ navigation }) => {
   const [id_user, setIdUser] = useState(-1);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+
+  const [street, setStreet] = useState("");
+  const [city, setCity] = useState("");
+  const [zipcode, setZipcode] = useState("");
+  const [markers, setMarkers] = useState([]); // [{ position: [latitude, longitude], title: "Title", description: "Description" }
+  const [longitude, setLongitude] = useState(0);
+  const [latitude, setLatitude] = useState(0);
+  const [showMap, setShowMap] = useState(false);
+
   const [startDate, setStartDate] = useState(new Date());
   const [startTime, setStartTime] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
@@ -28,6 +40,7 @@ const NewListingScreen = ({ navigation }) => {
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+
   const [file, setFile] = useState(null);
 
   const [error, setError] = useState("");
@@ -117,6 +130,29 @@ const NewListingScreen = ({ navigation }) => {
         }
       );
 
+      if (response.data.id) {
+        const addressResponse = await axios.post(
+          "http://192.168.1.110:8000/addAddress/",
+          {
+            listing_id: response.data.id,
+            street: street,
+            city: city,
+            zipcode: zipcode,
+            latitude: latitude,
+            longitude: longitude,
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        if (!addressResponse.data.id) {
+          throw new Error("Error adding address.");
+        }
+      }
+
       if (file && response.data.id) {
         const newImageUri = "file:///" + file.uri.split("file:/").join("");
         const formData = new FormData();
@@ -160,6 +196,46 @@ const NewListingScreen = ({ navigation }) => {
     }
   };
 
+  const handleGetLocation = async () => {
+    const address = `${street}, ${city}, ${zipcode}`;
+    const apiKey = "240a3a6dd9d4406598fa23bfdfb31f69"; // Make sure to replace this with your actual API key
+
+    try {
+      const response = await axios.get(
+        "https://api.opencagedata.com/geocode/v1/json",
+        {
+          params: {
+            q: address,
+            key: apiKey,
+          },
+        }
+      );
+
+      const data = response.data;
+      if (data.results.length > 0) {
+        const { lat, lng } = data.results[0].geometry;
+        setLatitude(lat);
+        setLongitude(lng);
+        setMarkers([
+          {
+            position: [lat, lng],
+            title: "Title",
+            description: "Description",
+          },
+        ]);
+        setShowMap(true);
+      } else {
+        console.log("No results found.");
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
+
+  const handleHideMap = () => {
+    setShowMap(false);
+  };
+
   const handleChoosePhoto = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permissionResult.granted === false) {
@@ -199,89 +275,127 @@ const NewListingScreen = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
-      {error !== "" && <Text style={styles.errorText}>{error}</Text>}
-      <TextInput
-        placeholder="Name"
-        value={name}
-        onChangeText={setName}
-        style={styles.input}
-      />
-      <TextInput
-        placeholder="Description"
-        value={description}
-        onChangeText={setDescription}
-        style={styles.input}
-      />
-      <View style={styles.buttonContainer}>
-        <Button
-          onPress={() => setShowStartDatePicker(true)}
-          title="Choose Start Date"
+    <ScrollView>
+      <View style={styles.container}>
+        {error !== "" && <Text style={styles.errorText}>{error}</Text>}
+        <TextInput
+          placeholder="Name"
+          value={name}
+          onChangeText={setName}
+          style={styles.input}
         />
-        {showStartDatePicker && (
-          <DateTimePicker
-            testID="dateTimePicker"
-            value={startDate}
-            mode="date"
-            is24Hour={true}
-            display="default"
-            onChange={onChangeStartDate}
+        <TextInput
+          placeholder="Description"
+          value={description}
+          onChangeText={setDescription}
+          style={styles.input}
+        />
+        <TextInput
+          placeholder="Street"
+          onChangeText={setStreet}
+          value={street}
+          style={styles.input}
+        />
+        <TextInput
+          placeholder="City"
+          onChangeText={setCity}
+          value={city}
+          style={styles.input}
+        />
+        <TextInput
+          placeholder="Zipcode"
+          onChangeText={setZipcode}
+          value={zipcode}
+          style={styles.input}
+        />
+        <Button title="Valider la location" onPress={handleGetLocation} />
+        <View style={styles.buttonContainer}>
+          <Button
+            onPress={() => setShowStartDatePicker(true)}
+            title="Choose Start Date"
+          />
+          {showStartDatePicker && (
+            <DateTimePicker
+              testID="dateTimePicker"
+              value={startDate}
+              mode="date"
+              is24Hour={true}
+              display="default"
+              onChange={onChangeStartDate}
+            />
+          )}
+          <Button
+            onPress={() => setShowStartTimePicker(true)}
+            title="Choose start time"
+          />
+          {showStartTimePicker && (
+            <DateTimePicker
+              testID="dateTimePicker"
+              value={startTime}
+              mode="time"
+              is24Hour={true}
+              display="default"
+              onChange={onChangeStartTime}
+            />
+          )}
+        </View>
+        <View style={styles.buttonContainer}>
+          <Button
+            onPress={() => setShowEndDatePicker(true)}
+            title="Choose End Date"
+          />
+          {showEndDatePicker && (
+            <DateTimePicker
+              testID="dateTimePicker"
+              value={endDate}
+              mode="date"
+              is24Hour={true}
+              display="default"
+              onChange={onChangeEndDate}
+            />
+          )}
+          <Button
+            onPress={() => setShowEndTimePicker(true)}
+            title="Choose end time"
+          />
+          {showEndTimePicker && (
+            <DateTimePicker
+              testID="dateTimePicker"
+              value={endTime}
+              mode="time"
+              is24Hour={true}
+              display="default"
+              onChange={onChangeEndTime}
+            />
+          )}
+        </View>
+        <View style={styles.buttonContainer}>
+          <Button title="Choose Photo" onPress={handleChoosePhoto} />
+          <Button title="Take Photo" onPress={handleTakePhoto} />
+        </View>
+        {file && (
+          <Image source={{ uri: file.uri }} style={styles.previewImage} />
+        )}
+        {showMap && (
+          <MapComponent
+            latitude={latitude}
+            longitude={longitude}
+            markers={markers}
           />
         )}
-        <Button
-          onPress={() => setShowStartTimePicker(true)}
-          title="Choose start time"
-        />
-        {showStartTimePicker && (
-          <DateTimePicker
-            testID="dateTimePicker"
-            value={startTime}
-            mode="time"
-            is24Hour={true}
-            display="default"
-            onChange={onChangeStartTime}
-          />
+        {showMap ? (
+          <>
+            <Pressable style={styles.button} onPress={handleHideMap}>
+              <Text style={styles.text}>Fermer la carte</Text>
+            </Pressable>
+          </>
+        ) : (
+          <Pressable style={styles.button} onPress={handleCreateListing}>
+            <Text style={styles.text}>Ajouter une annonce</Text>
+          </Pressable>
         )}
       </View>
-      <View style={styles.buttonContainer}>
-        <Button
-          onPress={() => setShowEndDatePicker(true)}
-          title="Choose End Date"
-        />
-        {showEndDatePicker && (
-          <DateTimePicker
-            testID="dateTimePicker"
-            value={endDate}
-            mode="date"
-            is24Hour={true}
-            display="default"
-            onChange={onChangeEndDate}
-          />
-        )}
-        <Button
-          onPress={() => setShowEndTimePicker(true)}
-          title="Choose end time"
-        />
-        {showEndTimePicker && (
-          <DateTimePicker
-            testID="dateTimePicker"
-            value={endTime}
-            mode="time"
-            is24Hour={true}
-            display="default"
-            onChange={onChangeEndTime}
-          />
-        )}
-      </View>
-      <View style={styles.buttonContainer}>
-        <Button title="Choose Photo" onPress={handleChoosePhoto} />
-        <Button title="Take Photo" onPress={handleTakePhoto} />
-      </View>
-      {file && <Image source={{ uri: file.uri }} style={styles.previewImage} />}
-      <Pressable style={styles.button} onPress={handleCreateListing}>
-        <Text style={styles.text}>Ajouter une annonce</Text>
-      </Pressable>
-    </View>
+    </ScrollView>
   );
 };
 

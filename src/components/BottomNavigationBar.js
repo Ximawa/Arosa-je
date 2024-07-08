@@ -9,7 +9,7 @@ const BottomNavigationBar = ({ navigation }) => {
           <Text style={styles.text}>Annonces</Text>
         </View>
       </Pressable>
-      <Pressable onPress={() => navigation.navigate("Listing")}>
+      <Pressable onPress={() => navigation.navigate("Garde")}>
         <View style={styles.button}>
           <Text style={styles.text}>Mes gardes</Text>
         </View>

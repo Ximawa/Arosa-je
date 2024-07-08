@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { useRoute } from "@react-navigation/native";
 import * as SecureStore from "expo-secure-store";
-import { decodeJwtPayload } from "../utils/JwtUtils";
+import { jwtDecode } from "jwt-decode";
 import axios from "axios";
 import BottomNavigationBar from "../components/BottomNavigationBar";
 
@@ -21,10 +21,11 @@ const ConversationScreen = (navigation) => {
   const [messageText, setMessageText] = useState(""); // State for input field text
 
   const fetchConversation = async () => {
+    console.log("ConversationScreen mounted");
     const jwtToken = await SecureStore.getItemAsync("userToken");
-    const jwtData = decodeJwtPayload(jwtToken);
-    if (jwtData) {
-      setUserId(jwtData.id);
+    if (jwtToken) {
+      const decoded = jwtDecode(jwtToken);
+      setUserId(decoded.id);
     }
     try {
       const response = await axios.get(
@@ -38,16 +39,20 @@ const ConversationScreen = (navigation) => {
 
   useEffect(() => {
     fetchConversation();
-    console.log("ConversationScreen mounted");
-  }, [id]);
+    const intervalId = setInterval(() => {
+      fetchConversation();
+    }, 5000);
+
+    return () => clearInterval(intervalId);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     const jwtToken = await SecureStore.getItemAsync("userToken");
-    const jwtData = decodeJwtPayload(jwtToken);
-    if (jwtData) {
-      setUserId(jwtData.id);
+    if (jwtToken) {
+      const decoded = jwtDecode(jwtToken);
+      setUserId(decoded.id);
     }
     try {
       const response = await axios.post(

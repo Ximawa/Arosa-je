@@ -12,7 +12,7 @@ import {
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
 import BottomNavigationBar from "../components/BottomNavigationBar";
-import { decodeJwtPayload } from "../utils/JwtUtils";
+import { jwtDecode } from "jwt-decode";
 
 const ListingInfoScreen = ({ navigation }) => {
   const route = useRoute();
@@ -79,23 +79,20 @@ const ListingInfoScreen = ({ navigation }) => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const jwtToken = await SecureStore.getItemAsync("userToken");
-      const jwtData = decodeJwtPayload(jwtToken);
-      if (jwtData) {
-        setProposerId(jwtData.id);
+      const token = await SecureStore.getItemAsync("userToken");
+      if (token) {
+        const decoded = jwtDecode(token);
+        setProposerId(decoded.id);
       }
       try {
         const response = await axios.get(
           `http://192.168.1.110:8000/get_proposal_created/${id}`,
           {
             headers: {
-              Authorization: `Bearer ${jwtToken}`,
+              Authorization: `Bearer ${token}`,
             },
           }
         );
-        if (response.data == null) {
-          setIsVisible(false);
-        }
       } catch (error) {
         console.error(
           "Erreur lors de la récupération de l'etat de l'annonce:",
@@ -104,13 +101,6 @@ const ListingInfoScreen = ({ navigation }) => {
       }
     };
 
-    fetchData();
-
-    setIdListing(id);
-    setProposalMsg("");
-  }, []);
-
-  useEffect(() => {
     const getInfo = async () => {
       try {
         const response = await axios.get(
@@ -118,32 +108,15 @@ const ListingInfoScreen = ({ navigation }) => {
         );
         setTitle(response.data.name);
         setDescription(response.data.description);
-        setStartDate(
-          new Date(response.data.start_date)
-            .toLocaleString("fr-FR", {
-              year: "numeric",
-              month: "2-digit",
-              day: "2-digit",
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: true,
-            })
-            .replace(/\//g, "-")
-            .replace(",", "")
-        );
-        setEndDate(
-          new Date(response.data.end_date)
-            .toLocaleString("fr-FR", {
-              year: "numeric",
-              month: "2-digit",
-              day: "2-digit",
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: true,
-            })
-            .replace(/\//g, "-")
-            .replace(",", "")
-        );
+        setStartDate(response.data.start_date);
+        setEndDate(response.data.end_date);
+        const token = await SecureStore.getItemAsync("userToken");
+        if (token) {
+          const decoded = jwtDecode(token);
+          if (response.data.id_user == decoded.id) {
+            setIsVisible(false);
+          }
+        }
       } catch (error) {
         console.error("Error fetching info:", error);
       }
@@ -171,6 +144,10 @@ const ListingInfoScreen = ({ navigation }) => {
       }
     };
 
+    fetchData();
+
+    setIdListing(id);
+    setProposalMsg("");
     getInfo();
     getImage();
   }, []);
@@ -181,27 +158,29 @@ const ListingInfoScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{title}</Text>
-      {imageSrc ? (
-        <Image source={{ uri: imageSrc }} style={styles.image} />
-      ) : null}
-      <Text style={styles.text}>{description}</Text>
-      <Text style={styles.text}>
-        Du: {start_date.slice(0, -3).replace("T", " ")}
-      </Text>
-      <Text style={styles.text}>
-        Au: {end_date.slice(0, -3).replace("T", " ")}
-      </Text>
-      {isVisible ? (
-        <></>
+      {loading ? (
+        <ActivityIndicator size="large" color="#0000ff" />
       ) : (
-        <Pressable
-          title="Se proposer"
-          onPress={handleClickCreate}
-          style={styles.button}
-        >
-          <Text style={styles.textButton}>Se proposer</Text>
-        </Pressable>
+        <>
+          <Text style={styles.title}>{title}</Text>
+          {imageSrc ? (
+            <Image source={{ uri: imageSrc }} style={styles.image} />
+          ) : null}
+          <Text style={styles.text}>{description}</Text>
+          <Text style={styles.text}>Du: {start_date}</Text>
+          <Text style={styles.text}>Au: {end_date}</Text>
+          {isVisible ? (
+            <Pressable
+              title="Se proposer"
+              onPress={handleClickCreate}
+              style={styles.button}
+            >
+              <Text style={styles.textButton}>Se proposer</Text>
+            </Pressable>
+          ) : (
+            <></>
+          )}
+        </>
       )}
       <BottomNavigationBar navigation={navigation} />
     </View>

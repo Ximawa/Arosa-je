@@ -38,7 +38,7 @@ export default function SignupScreen({ navigation }) {
       formData.append("username", username);
       formData.append("email", email);
       formData.append("full_name", fullName);
-      formData.append("id_role", role);
+      formData.append("id_role", 1);
       formData.append("password", password);
 
       const response = await axios.post(
@@ -97,15 +97,6 @@ export default function SignupScreen({ navigation }) {
         onChangeText={setConfirmPassword}
         secureTextEntry
       />
-      <Picker
-        selectedValue={role}
-        onValueChange={(itemValue) => setRole(itemValue)}
-        style={styles.picker}
-      >
-        {roles.map((role, index) => (
-          <Picker.Item key={index} label={role.title} value={role.id} />
-        ))}
-      </Picker>
       {error !== "" && <Text style={styles.errorText}>{error}</Text>}
       <Button title="Sign Up" onPress={handleSignup} />
       <Button

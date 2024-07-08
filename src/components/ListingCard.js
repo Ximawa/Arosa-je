@@ -13,6 +13,7 @@ import {
 
 const ListingCard = ({ id, name, start_date, end_date, onClick, children }) => {
   const [imageSrc, setImageSrc] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const getImage = async () => {
@@ -29,6 +30,7 @@ const ListingCard = ({ id, name, start_date, end_date, onClick, children }) => {
           const base64data = reader.result;
           setImageSrc(base64data);
         };
+        setLoading(false);
       } catch (error) {
         console.error("Error fetching image:", error);
       }
@@ -41,8 +43,12 @@ const ListingCard = ({ id, name, start_date, end_date, onClick, children }) => {
     <View onPress={() => onClick(id)} style={styles.container}>
       {imageSrc && <Image source={{ uri: imageSrc }} style={styles.image} />}
       <Text style={styles.text}>{name}</Text>
-      <Text style={styles.text}>Start Date: {start_date}</Text>
-      <Text style={styles.text}>End Date: {end_date}</Text>
+      <Text style={styles.text}>
+        Du: {start_date.slice(0, -3).replace("T", " ")}
+      </Text>
+      <Text style={styles.text}>
+        Au: {end_date.slice(0, -3).replace("T", " ")}
+      </Text>
       <Pressable
         title="Voir plus"
         onPress={() => onClick(id)}

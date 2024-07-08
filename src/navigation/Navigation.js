@@ -10,6 +10,8 @@ import NewListingScreen from "../screens/NewListingScreen";
 import ConversationScreen from "../screens/ConversationScreen";
 import ConversationListScreen from "../screens/ConversationListScreen";
 import ListingInfoScreen from "../screens/ListingInfoScreen";
+import GardeScreen from "../screens/GardeScreen";
+import ListingMapScreen from "../screens/ListingMapScreen";
 import { useAuth, AuthProvider } from "../utils/AuthProvider";
 
 const Stack = createStackNavigator();
@@ -26,6 +28,8 @@ function MyStack() {
           <Stack.Screen name="Dashboard" component={DashboardScreen} />
           <Stack.Screen name="NewListing" component={NewListingScreen} />
           <Stack.Screen name="ListingInfo" component={ListingInfoScreen} />
+          <Stack.Screen name="ListingMap" component={ListingMapScreen} />
+          <Stack.Screen name="Garde" component={GardeScreen} />
           <Stack.Screen name="Conversation" component={ConversationScreen} />
           <Stack.Screen
             name="ConversationList"

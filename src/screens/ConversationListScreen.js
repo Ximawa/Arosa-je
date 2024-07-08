@@ -10,7 +10,7 @@ import {
 import * as SecureStore from "expo-secure-store";
 import axios from "axios";
 import BottomNavigationBar from "../components/BottomNavigationBar";
-import { decodeJwtPayload } from "../utils/JwtUtils";
+import { jwtDecode } from "jwt-decode";
 
 const ConversationListScreen = ({ navigation }) => {
   const [conversations, setConversations] = useState([]);
@@ -18,9 +18,9 @@ const ConversationListScreen = ({ navigation }) => {
   const fetchConversations = async () => {
     try {
       const jwtToken = await SecureStore.getItemAsync("userToken");
-      const jwtData = decodeJwtPayload(jwtToken);
-      if (jwtData) {
-        var userId = jwtData.id;
+      if (jwtToken) {
+        const decoded = jwtDecode(jwtToken);
+        var userId = decoded.id;
       }
       const response = await axios.get(
         `http://192.168.1.110:8000/conversation/user/${userId}`
